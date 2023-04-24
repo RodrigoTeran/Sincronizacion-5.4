@@ -1,4 +1,9 @@
 #include <iostream>
+#include <iomanip>
+#include <algorithm>
+#include <cmath>
+#include <pthread.h>
+#include <chrono>
 
 using namespace std;
 
@@ -11,7 +16,7 @@ void generateCoords() {
 void printMatrix(double** matrix, int rows) {
     cout << "Printing matrix..." << endl;
     for (int i = 0; i < rows; i++) {
-        cout << "(" << matrix[i][0] << ", " << matrix[i][1] << ")" << endl;
+        cout << "(" << fixed << setprecision(5) << matrix[i][0] << ", " << fixed << setprecision(5) << matrix[i][1] << ")" << endl;
     };
 };
 
@@ -21,7 +26,7 @@ int main() {
     for (int i = 0; i < rows; i++) {
         matrix[i] = new double[cols];
         for (int j = 0; j < cols; j++) {
-            matrix[i][j] = 3;
+            matrix[i][j] = 3.123456789;
         }
     }
     printMatrix(matrix, rows);
