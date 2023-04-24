@@ -8,7 +8,7 @@ void generateCoords() {
 
 };
 
-void printMatrix(int** matrix, int rows) {
+void printMatrix(double** matrix, int rows) {
     cout << "Printing matrix..." << endl;
     for (int i = 0; i < rows; i++) {
         cout << "(" << matrix[i][0] << ", " << matrix[i][1] << ")" << endl;
@@ -17,9 +17,9 @@ void printMatrix(int** matrix, int rows) {
 
 int main() {
     int rows = COORDS, cols = 2;
-    int** matrix = new int*[rows];
+    double** matrix = new double*[rows];
     for (int i = 0; i < rows; i++) {
-        matrix[i] = new int[cols];
+        matrix[i] = new double[cols];
         for (int j = 0; j < cols; j++) {
             matrix[i][j] = 3;
         }
