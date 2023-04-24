@@ -9,11 +9,13 @@
 
 using namespace std;
 
-const int COORDS = 3000;
-const int THREADS = 3;
-int id[THREADS];
+const int COORDS = 1000000;
+const int MAX_THREADS = 8;
+
+int ids[MAX_THREADS];
 int dotsInsideCircle = 0;
-pthread_t tids[THREADS];
+
+pthread_t tids[MAX_THREADS];
 pthread_mutex_t mutex_lock;
 
 
@@ -35,41 +37,46 @@ void isDotInsideCircle(int* amount, double* dot) {
 };
 
 
-void* generateCoords(int d) {
+void* generateCoords(void *param) {
+    int id = *(int*) param;
     int rows = COORDS;
+
+    int step = rows/MAX_THREADS;
     int cols = 2;
 
     srand( (unsigned)time( NULL ) );
-    pthread_mutex_lock(&mutex_lock);
-    double** matrix = new double*[rows];
-    for (int i = 0; i < rows; i++) {
+    double** matrix = new double*[step];
+    int from = 0;
+    int to = step;
+    int amount = 0;
+
+    for (int i = from; i < to; i++) {
         matrix[i] = new double[cols];
         for (int j = 0; j < cols; j++) {
             bool isNegative = (float) rand()/RAND_MAX < 0.5; 
             matrix[i][j] = (float) rand()/RAND_MAX * (isNegative ? -1 : 1);
         };
-        isDotInsideCircle(&dotsInsideCircle, matrix[i]);
+        isDotInsideCircle(&amount, matrix[i]);
     };
-
-    // printMatrix(matrix, rows);
+    pthread_mutex_lock(&mutex_lock);
+    dotsInsideCircle += amount;
     pthread_mutex_unlock(&mutex_lock);
     pthread_exit(NULL);
 };
 
 
 int main(int argc, char* argv[]) {
-    // for (int i = 0; i < THREADS; i++) {
-    //     state[i] = GENERATING;
-    //     id[i] = i;
-    //     pthread_cond_init(&chopsticks[i], NULL);
-    // }
     pthread_mutex_init(&mutex_lock, NULL);
 
-    for (int i = 0; i < THREADS; i++) {
-        pthread_create(&tids[i], NULL, generateCoords, (void*) 3);
+    for (int i = 0; i < MAX_THREADS; i++) {
+        ids[i] = i;
+    };
+
+    for (int i = 0; i < MAX_THREADS; i++) {
+        pthread_create(&tids[i], NULL, generateCoords, (void*) &ids[i]);
     }
 
-    for (int i = 0; i < THREADS; i++) {
+    for (int i = 0; i < MAX_THREADS; i++) {
         pthread_join(tids[i], NULL);
     }
 
