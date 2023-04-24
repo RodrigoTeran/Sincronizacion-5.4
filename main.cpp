@@ -4,6 +4,8 @@
 #include <cmath>
 #include <pthread.h>
 #include <chrono>
+#include <ctime>
+#include <cstdlib>
 
 using namespace std;
 
@@ -22,15 +24,16 @@ void printMatrix(double** matrix, int rows) {
 
 int main() {
     int rows = COORDS, cols = 2;
+    srand( (unsigned)time( NULL ) );
     double** matrix = new double*[rows];
     for (int i = 0; i < rows; i++) {
         matrix[i] = new double[cols];
         for (int j = 0; j < cols; j++) {
-            matrix[i][j] = 3.123456789;
+            bool isNegative = (float) rand()/RAND_MAX < 0.5; 
+            matrix[i][j] = (float) rand()/RAND_MAX * (isNegative ? -1 : 1);
         }
     }
     printMatrix(matrix, rows);
-    // cout << matrix[i] << endl;
 
     return 0;
 };
