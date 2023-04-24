@@ -9,7 +9,7 @@
 
 using namespace std;
 
-const int COORDS = 3;
+const int COORDS = 3000;
 
 void generateCoords() {
 
@@ -31,6 +31,8 @@ void isDotInsideCircle(int* amount, double* dot) {
     *amount += 1;
 };
 
+
+
 int main() {
     // Create matrix
     int rows = COORDS, cols = 2;
@@ -48,6 +50,10 @@ int main() {
     }
     printMatrix(matrix, rows);
     cout << "Amount: " << dotsInsideCircle << endl;
+
+    double pi = 4.0 * dotsInsideCircle / rows;
+
+    cout <<"pi is equal to: " << fixed << setprecision(5) << pi << endl;
 
     return 0;
 };
