@@ -9,12 +9,11 @@
 
 using namespace std;
 
-const int MAX_STUDENTS = 10;
-const int MAX_SLEEP_TIME = 5;
+const int COORDS = 1000000;
 const int MAX_THREADS = 8;
-enum{STUDYING,EATING}state[MAX_STUDENTS];
 
 int ids[MAX_THREADS];
+int dotsInsideCircle = 0;
 
 pthread_t tids[MAX_THREADS];
 pthread_mutex_t mutex_lock;
@@ -37,15 +36,33 @@ void isDotInsideCircle(int* amount, double* dot) {
     *amount += 1;
 };
 
-void test(int i) {
-    if (state[i] == EATING &&
-        state[i] == STUDYING) {
 
-        state[i] = EATING;
-        pthread_cond_signal(&chopsticks[i]);
-    }
-}
+void* generateCoords(void *param) {
+    int id = *(int*) param;
+    int rows = COORDS;
 
+    int step = rows/MAX_THREADS;
+    int cols = 2;
+
+    srand( (unsigned)time( NULL ) );
+    double** matrix = new double*[step];
+    int from = 0;
+    int to = step;
+    int amount = 0;
+
+    for (int i = from; i < to; i++) {
+        matrix[i] = new double[cols];
+        for (int j = 0; j < cols; j++) {
+            bool isNegative = (float) rand()/RAND_MAX < 0.5; 
+            matrix[i][j] = (float) rand()/RAND_MAX * (isNegative ? -1 : 1);
+        };
+        isDotInsideCircle(&amount, matrix[i]);
+    };
+    pthread_mutex_lock(&mutex_lock);
+    dotsInsideCircle += amount;
+    pthread_mutex_unlock(&mutex_lock);
+    pthread_exit(NULL);
+};
 
 
 int main(int argc, char* argv[]) {
