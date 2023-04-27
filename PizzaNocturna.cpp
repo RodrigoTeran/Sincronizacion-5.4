@@ -6,68 +6,108 @@
 #include <chrono>
 #include <ctime>
 #include <cstdlib>
+#include <sys/time.h>
+#include <unistd.h>
 
 using namespace std;
 
-const int MAX_STUDENTS = 10;
-const int MAX_SLEEP_TIME = 5;
+const int STUDENTS = 10;
 const int MAX_THREADS = 8;
-enum{STUDYING,EATING}state[MAX_STUDENTS];
+const int SLICES_PER_PIZZA = 8;
+const int SLEEP_TIME = 1;
+enum{
+    STUDYING_AND_EATING,
+    WAITING
+} state[STUDENTS];
 
-int ids[MAX_THREADS];
+int ids[STUDENTS];
+int slices = SLICES_PER_PIZZA;
 
 pthread_t tids[MAX_THREADS];
-pthread_mutex_t mutex_lock;
+pthread_cond_t areSlicesLeft;
+pthread_mutex_t mutex_lock_slices, mutex_lock_pizzeria;
 
 
-void printMatrix(double** matrix, int rows) {
-    cout << "Printing matrix..." << endl;
-    for (int i = 0; i < rows; i++) {
-        cout << "(" << fixed << setprecision(5) << matrix[i][0] << ", " << fixed << setprecision(5) << matrix[i][1] << ")" << endl;
-    };
-};
+void waiting(int id) {
+    sleep(SLEEP_TIME);
+}
 
+void eating(int id) {
+    cout << "Student: " << id << " is eating." << endl;
+    sleep(SLEEP_TIME);
+}
 
-void isDotInsideCircle(int* amount, double* dot) {
-    double distance = pow(pow(dot[0], 2) + pow(dot[1], 2), .5);
-
-    if (distance > 1) return;
-
-    // Its inside
-    *amount += 1;
-};
+void askForSlices(int id) {
+    cout << "Student: " << id << " is asking for another slice..." << endl;
+    sleep(SLEEP_TIME);
+}
 
 void test(int i) {
-    if (state[i] == EATING &&
-        state[i] == STUDYING) {
-
-        state[i] = EATING;
-        pthread_cond_signal(&chopsticks[i]);
+    // Try to eat
+    if (state[i] == WAITING &&
+        slices > 0
+    ) {
+        state[i] = STUDYING_AND_EATING;
+        cout << " Slices left: " << slices << endl;
+        slices -= 1;
+        return;
+    }
+    if (slices == 0) {
+        askForSlices(i);
+        pthread_mutex_unlock(&mutex_lock_pizzeria);
+        slices = SLICES_PER_PIZZA;
+        pthread_mutex_lock(&mutex_lock_pizzeria);
+        pthread_cond_signal(&areSlicesLeft);
+        test(i);
     }
 }
 
+void pickupSliceOfPizza(int i) {
+    pthread_mutex_lock(&mutex_lock_slices);
+    test(i);
+    // If it is still waiting we need to wait until there are more slices
+    while (state[i] == WAITING) {
+        pthread_cond_wait(&areSlicesLeft, &mutex_lock_slices);
+    }
+    pthread_mutex_unlock(&mutex_lock_slices);
+}
 
+void finishEating(int i) {
+    pthread_mutex_lock(&mutex_lock_slices);
+    state[i] = WAITING;
+    pthread_mutex_unlock(&mutex_lock_slices);
+}
+
+void* student(void *param) {
+    int id = *((int*) param);
+
+    while(true) {
+        waiting(id);
+        pickupSliceOfPizza(id);
+        eating(id);
+        finishEating(id);
+    }
+    pthread_exit(NULL);
+}
 
 int main(int argc, char* argv[]) {
-    pthread_mutex_init(&mutex_lock, NULL);
-
-    for (int i = 0; i < MAX_THREADS; i++) {
+    for (int i = 0; i < STUDENTS; i++) {
+        state[i] = WAITING;
         ids[i] = i;
-    };
+    }
+    pthread_cond_init(&areSlicesLeft, NULL);
+    pthread_mutex_init(&mutex_lock_slices, NULL);
 
-    for (int i = 0; i < MAX_THREADS; i++) {
-        pthread_create(&tids[i], NULL, generateCoords, (void*) &ids[i]);
+    pthread_mutex_init(&mutex_lock_pizzeria, NULL);
+    pthread_mutex_lock(&mutex_lock_pizzeria);
+
+    for (int i = 0; i < STUDENTS; i++) {
+        pthread_create(&tids[i], NULL, student, (void*) &ids[i]);
     }
 
-    for (int i = 0; i < MAX_THREADS; i++) {
+    for (int i = 0; i < STUDENTS; i++) {
         pthread_join(tids[i], NULL);
     }
 
-    cout << "Amount: " << dotsInsideCircle << "/" << COORDS << endl;
-
-    double pi = 4.0 * dotsInsideCircle / COORDS;
-
-    cout << "Pi is equal to: " << fixed << setprecision(5) << pi << endl;
-
     return 0;
-};
+}
